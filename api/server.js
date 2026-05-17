@@ -13,8 +13,10 @@ app.use(cors());
 app.use(express.json());
 
 // Serve local uploads
-const baseDir = process.env.VERCEL ? '/tmp' : __dirname;
-app.use('/api/uploads', express.static(path.join(baseDir, 'uploads')));
+app.use('/api/uploads', express.static(path.join(__dirname, 'uploads')));
+if (process.env.VERCEL) {
+    app.use('/api/uploads', express.static(path.join('/tmp', 'uploads')));
+}
 
 // Routes
 app.use('/api', apiRoutes);

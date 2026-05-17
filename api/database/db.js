@@ -23,9 +23,21 @@ if (isPostgres) {
     console.log('Using PostgreSQL database');
 } else {
     // Local setup (SQLite)
-    // If hosted on Vercel without Postgres, /tmp is the only writable directory
+    // If hosted on Vercel without Postgres, /tmp is the only writable directory.
+    // We copy the committed portfolio.db to /tmp so data is preserved across instances.
+    const fs = require('fs');
     const dbDir = process.env.VERCEL ? '/tmp' : __dirname;
     const dbPath = path.join(dbDir, 'portfolio.db');
+    
+    if (process.env.VERCEL && !fs.existsSync(dbPath)) {
+        try {
+            fs.copyFileSync(path.join(__dirname, 'portfolio.db'), dbPath);
+            console.log('Copied committed SQLite database to /tmp');
+        } catch (err) {
+            console.error('Failed to copy database to /tmp:', err);
+        }
+    }
+
     const db = new sqlite3.Database(dbPath, (err) => {
         if (err) console.error('Error opening local database', err);
     });
