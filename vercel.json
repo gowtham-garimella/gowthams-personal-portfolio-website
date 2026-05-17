@@ -12,10 +12,7 @@
   ],
   "functions": {
     "api/**/*.js": {
-      "includeFiles": [
-        "api/database/portfolio.db",
-        "api/uploads/**"
-      ]
+      "includeFiles": "api/{database/portfolio.db,uploads/**}"
     }
   }
 }
