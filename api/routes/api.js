@@ -19,7 +19,8 @@ if (isVercelBlob) {
     console.log('Using Vercel Blob for uploads');
 } else {
     // Local setup (Disk Storage)
-    const uploadDir = path.join(__dirname, '../uploads');
+    const baseDir = process.env.VERCEL ? '/tmp' : path.join(__dirname, '..');
+    const uploadDir = path.join(baseDir, 'uploads');
     if (!fs.existsSync(uploadDir)) {
         fs.mkdirSync(uploadDir, { recursive: true });
     }

@@ -9,11 +9,11 @@ if (isPostgres) {
     // Cloud setup (Vercel Postgres, Neon, Supabase)
     const pgPool = new Pool({
         connectionString: process.env.POSTGRES_URL,
+        ssl: { rejectUnauthorized: false }
     });
     
     pgPool.on('error', (err) => {
         console.error('Unexpected error on idle client', err);
-        process.exit(-1);
     });
 
     pool = {
@@ -23,7 +23,9 @@ if (isPostgres) {
     console.log('Using PostgreSQL database');
 } else {
     // Local setup (SQLite)
-    const dbPath = path.join(__dirname, 'portfolio.db');
+    // If hosted on Vercel without Postgres, /tmp is the only writable directory
+    const dbDir = process.env.VERCEL ? '/tmp' : __dirname;
+    const dbPath = path.join(dbDir, 'portfolio.db');
     const db = new sqlite3.Database(dbPath, (err) => {
         if (err) console.error('Error opening local database', err);
     });
