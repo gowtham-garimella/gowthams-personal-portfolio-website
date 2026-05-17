@@ -112,7 +112,7 @@ const Portfolio = () => {
           <div style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', gap: '4rem', flexWrap: 'wrap', justifyContent: 'center' }}>
             {profile.avatar_url && (
               <motion.img 
-                src={`http://localhost:8000${profile.avatar_url}`}
+                src={profile.avatar_url}
                 alt="Avatar" 
                 style={{ width: 200, height: 200, borderRadius: '50%', objectFit: 'cover', border: '3px solid var(--accent-color)' }}
                 whileHover={{ scale: 1.05, rotate: 3 }}
@@ -131,7 +131,7 @@ const Portfolio = () => {
                 {profile.twitter && <a href={profile.twitter} target="_blank" rel="noreferrer" className="btn-secondary"><Twitter /></a>}
                 {profile.email && <a href={`mailto:${profile.email}`} className="btn-secondary"><Mail /></a>}
                 {profile.resume_url && (
-                  <a href={`http://localhost:8000${profile.resume_url}`} target="_blank" rel="noreferrer" className="btn-primary">Download Resume</a>
+                  <a href={profile.resume_url} target="_blank" rel="noreferrer" className="btn-primary">Download Resume</a>
                 )}
               </div>
             </div>
@@ -210,7 +210,7 @@ const Portfolio = () => {
           >
             {projects.map(proj => (
               <motion.div key={proj.id} variants={itemVariants} whileHover={{ y: -10 }} className="glass" style={{ overflow: 'hidden', display: 'flex', flexDirection: 'column', background: 'rgba(10, 10, 10, 0.4)' }}>
-                {proj.image_url && <img src={`http://localhost:8000${proj.image_url}`} alt={proj.title} style={{ width: '100%', height: '200px', objectFit: 'cover' }} />}
+                {proj.image_url && <img src={proj.image_url} alt={proj.title} style={{ width: '100%', height: '200px', objectFit: 'cover' }} />}
                 <div style={{ padding: '1.5rem', flex: 1, display: 'flex', flexDirection: 'column' }}>
                   <h3 style={{ fontSize: '1.3rem', marginBottom: '0.5rem' }}>{proj.title}</h3>
                   <p style={{ flex: 1, marginBottom: '1rem' }}>{proj.description}</p>
@@ -252,6 +252,19 @@ const Portfolio = () => {
           </motion.div>
         </section>
       )}
+
+      {/* Footer / Admin Link */}
+      <footer style={{ textAlign: 'center', padding: '3rem 1rem', marginTop: '4rem', color: 'var(--text-secondary)', borderTop: '1px solid rgba(255,255,255,0.1)' }}>
+        <p style={{ marginBottom: '1rem' }}>&copy; {new Date().getFullYear()} {profile.name}. All rights reserved.</p>
+        <a 
+          href="/admin/login" 
+          style={{ color: 'var(--text-secondary)', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: '0.5rem', opacity: 0.5, transition: 'opacity 0.2s', fontSize: '0.9rem' }} 
+          onMouseOver={e => e.currentTarget.style.opacity = 1} 
+          onMouseOut={e => e.currentTarget.style.opacity = 0.5}
+        >
+          <User size={14} /> Admin Portal
+        </a>
+      </footer>
 
     </div>
   );

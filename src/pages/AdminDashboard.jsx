@@ -138,7 +138,7 @@ const ProfileForm = ({ profile, token, onUpdate }) => {
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '2rem', marginBottom: '2rem' }}>
         <div className="glass" style={{ padding: '1.5rem', flex: 1, textAlign: 'center' }}>
           <h4>Profile Picture</h4>
-          {profile?.avatar_url && <img src={`http://localhost:8000${profile.avatar_url}`} alt="Avatar" style={{ width: 100, height: 100, borderRadius: '50%', objectFit: 'cover', margin: '1rem auto' }} />}
+          {profile?.avatar_url && <img src={profile.avatar_url} alt="Avatar" style={{ width: 100, height: 100, borderRadius: '50%', objectFit: 'cover', margin: '1rem auto' }} />}
           <label className="btn-secondary" style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer' }}>
             <Upload size={16} /> {profile?.avatar_url ? 'Update Photo' : 'Upload Photo'}
             <input type="file" hidden onChange={uploadAvatar} accept="image/*" />
@@ -146,7 +146,7 @@ const ProfileForm = ({ profile, token, onUpdate }) => {
         </div>
         <div className="glass" style={{ padding: '1.5rem', flex: 1, textAlign: 'center' }}>
           <h4>Resume / CV</h4>
-          {profile?.resume_url && <a href={`http://localhost:8000${profile.resume_url}`} target="_blank" rel="noreferrer" style={{ display: 'block', margin: '1rem 0', color: 'var(--accent-color)' }}>View Current Resume</a>}
+          {profile?.resume_url && <a href={profile.resume_url} target="_blank" rel="noreferrer" style={{ display: 'block', margin: '1rem 0', color: 'var(--accent-color)' }}>View Current Resume</a>}
           <label className="btn-secondary" style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer' }}>
             <Upload size={16} /> {profile?.resume_url ? 'Update Resume PDF' : 'Upload Resume PDF'}
             <input type="file" hidden onChange={uploadResume} accept=".pdf,.doc,.docx" />
