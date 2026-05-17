@@ -146,7 +146,7 @@ router.post('/upload/:type', authenticateToken, upload.single('file'), async (re
             });
             url = blob.url;
         } else {
-            url = `http://localhost:8000/api/uploads/${req.file.filename}`;
+            url = `/api/uploads/${req.file.filename}`;
         }
         
         let query = '';

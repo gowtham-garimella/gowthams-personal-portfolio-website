@@ -70,7 +70,7 @@ const Portfolio = () => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    axios.get('http://localhost:8000/api/portfolio')
+    axios.get('/api/portfolio')
       .then(res => {
         setData(res.data);
         setLoading(false);

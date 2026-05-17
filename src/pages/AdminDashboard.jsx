@@ -19,7 +19,7 @@ const AdminDashboard = () => {
 
   const fetchData = async () => {
     try {
-      const res = await axios.get('http://localhost:8000/api/portfolio');
+      const res = await axios.get('/api/portfolio');
       setData(res.data);
     } catch (err) {
       console.error(err);
@@ -83,7 +83,7 @@ const ProfileForm = ({ profile, token, onUpdate }) => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      await axios.post('http://localhost:8000/api/profile', formData, { headers: { Authorization: `Bearer ${token}` } });
+      await axios.post('/api/profile', formData, { headers: { Authorization: `Bearer ${token}` } });
       setMsg('Profile updated successfully!');
       onUpdate();
       setTimeout(() => setMsg(''), 3000);
@@ -98,7 +98,7 @@ const ProfileForm = ({ profile, token, onUpdate }) => {
     const data = new FormData();
     data.append('file', file);
     try {
-      await axios.post(`http://localhost:8000/api/upload/avatar`, data, { headers: { Authorization: `Bearer ${token}` } });
+      await axios.post(`/api/upload/avatar`, data, { headers: { Authorization: `Bearer ${token}` } });
       onUpdate();
       setMsg(`Avatar uploaded successfully!`);
       setTimeout(() => setMsg(''), 3000);
@@ -114,7 +114,7 @@ const ProfileForm = ({ profile, token, onUpdate }) => {
     const data = new FormData();
     data.append('file', file);
     try {
-      await axios.post(`http://localhost:8000/api/upload/resume`, data, { headers: { Authorization: `Bearer ${token}` } });
+      await axios.post(`/api/upload/resume`, data, { headers: { Authorization: `Bearer ${token}` } });
       onUpdate();
       setMsg(`Resume uploaded successfully!`);
       setTimeout(() => setMsg(''), 3000);
@@ -178,9 +178,9 @@ const ListManager = ({ table, items, token, onUpdate, fields }) => {
     e.preventDefault();
     try {
       if (editingId) {
-        await axios.put(`http://localhost:8000/api/${table}/${editingId}`, formData, { headers: { Authorization: `Bearer ${token}` } });
+        await axios.put(`/api/${table}/${editingId}`, formData, { headers: { Authorization: `Bearer ${token}` } });
       } else {
-        await axios.post(`http://localhost:8000/api/${table}`, formData, { headers: { Authorization: `Bearer ${token}` } });
+        await axios.post(`/api/${table}`, formData, { headers: { Authorization: `Bearer ${token}` } });
       }
       setFormData({});
       setIsAdding(false);
@@ -207,7 +207,7 @@ const ListManager = ({ table, items, token, onUpdate, fields }) => {
   const handleDelete = async (id) => {
     if (!window.confirm('Are you sure you want to delete this?')) return;
     try {
-      await axios.delete(`http://localhost:8000/api/${table}/${id}`, { headers: { Authorization: `Bearer ${token}` } });
+      await axios.delete(`/api/${table}/${id}`, { headers: { Authorization: `Bearer ${token}` } });
       onUpdate();
     } catch (err) {
       console.error(err);

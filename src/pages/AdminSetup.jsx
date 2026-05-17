@@ -11,7 +11,7 @@ const AdminSetup = () => {
 
   useEffect(() => {
     // Check if already setup
-    axios.get('http://localhost:8000/api/auth/status')
+    axios.get('/api/auth/status')
       .then(res => {
         if (res.data.isSetup) {
           navigate('/admin/login');
@@ -28,7 +28,7 @@ const AdminSetup = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      await axios.post('http://localhost:8000/api/auth/setup', { username, password });
+      await axios.post('/api/auth/setup', { username, password });
       navigate('/admin/login');
     } catch (err) {
       setError(err.response?.data?.error || 'Setup failed');
