@@ -9,5 +9,13 @@
       "source": "/(.*)",
       "destination": "/"
     }
-  ]
+  ],
+  "functions": {
+    "api/**/*.js": {
+      "includeFiles": [
+        "api/database/portfolio.db",
+        "api/uploads/**"
+      ]
+    }
+  }
 }
