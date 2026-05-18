@@ -1,15 +1,5 @@
 {
   "version": 2,
-  "rewrites": [
-    {
-      "source": "/api/(.*)",
-      "destination": "/api"
-    },
-    {
-      "source": "/(.*)",
-      "destination": "/"
-    }
-  ],
   "functions": {
     "api/index.js": {
       "includeFiles": "api/{database/portfolio.db,uploads/**}"
