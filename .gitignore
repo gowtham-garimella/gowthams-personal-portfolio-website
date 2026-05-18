@@ -1,1 +1,10 @@
-node_modules
+node_modules/
+api/node_modules/
+.env
+.DS_Store
+dist/
+.vscode/
+api/uploads/
+api/database/portfolio.db
+package-lock.json
+api/package-lock.json

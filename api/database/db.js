@@ -38,8 +38,10 @@ if (isPostgres) {
         }
     }
 
-    const db = new sqlite3.Database(dbPath, (err) => {
+    const openMode = sqlite3.OPEN_READWRITE | sqlite3.OPEN_CREATE;
+    const db = new sqlite3.Database(dbPath, openMode, (err) => {
         if (err) console.error('Error opening local database', err);
+        else console.log(`Opened SQLite DB at ${dbPath} with mode ${openMode}`);
     });
 
     pool = {

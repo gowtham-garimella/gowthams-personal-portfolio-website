@@ -3,16 +3,11 @@
   "rewrites": [
     {
       "source": "/api/(.*)",
-      "destination": "/api/server.js"
+      "destination": "/api"
     },
     {
       "source": "/(.*)",
       "destination": "/"
     }
-  ],
-  "functions": {
-    "api/**/*.js": {
-      "includeFiles": "api/{database/portfolio.db,uploads/**}"
-    }
-  }
+  ]
 }
