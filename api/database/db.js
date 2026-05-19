@@ -69,83 +69,79 @@ if (isPostgres) {
 }
 
 async function initializeDatabase() {
-    try {
-        await pool.query(`CREATE TABLE IF NOT EXISTS profile (
-            id SERIAL PRIMARY KEY,
-            name TEXT,
-            title TEXT,
-            bio TEXT,
-            email TEXT,
-            phone TEXT,
-            github TEXT,
-            linkedin TEXT,
-            twitter TEXT,
-            resume_url TEXT,
-            avatar_url TEXT,
-            background_url TEXT
-        )`);
+    await pool.query(`CREATE TABLE IF NOT EXISTS profile (
+        id SERIAL PRIMARY KEY,
+        name TEXT,
+        title TEXT,
+        bio TEXT,
+        email TEXT,
+        phone TEXT,
+        github TEXT,
+        linkedin TEXT,
+        twitter TEXT,
+        resume_url TEXT,
+        avatar_url TEXT,
+        background_url TEXT
+    )`);
 
-        const profileRes = await pool.query('SELECT COUNT(*) as count FROM profile');
-        if (parseInt(profileRes.rows[0].count) === 0) {
-            await pool.query(
-                `INSERT INTO profile (name, title, bio) VALUES ($1, $2, $3)`, 
-                ['Your Name', 'Software Developer', 'Welcome to my dynamic portfolio. Update this in the admin dashboard.']
-            );
-        }
-
-        await pool.query(`CREATE TABLE IF NOT EXISTS experience (
-            id SERIAL PRIMARY KEY,
-            company TEXT,
-            role TEXT,
-            start_date TEXT,
-            end_date TEXT,
-            description TEXT
-        )`);
-
-        await pool.query(`CREATE TABLE IF NOT EXISTS projects (
-            id SERIAL PRIMARY KEY,
-            title TEXT,
-            description TEXT,
-            image_url TEXT,
-            demo_url TEXT,
-            github_url TEXT,
-            tech_stack TEXT
-        )`);
-
-        await pool.query(`CREATE TABLE IF NOT EXISTS skills (
-            id SERIAL PRIMARY KEY,
-            name TEXT,
-            category TEXT,
-            proficiency INTEGER
-        )`);
-
-        await pool.query(`CREATE TABLE IF NOT EXISTS education (
-            id SERIAL PRIMARY KEY,
-            institution TEXT,
-            degree TEXT,
-            start_date TEXT,
-            end_date TEXT,
-            description TEXT
-        )`);
-
-        await pool.query(`CREATE TABLE IF NOT EXISTS certifications (
-            id SERIAL PRIMARY KEY,
-            title TEXT,
-            issuer TEXT,
-            date TEXT,
-            url TEXT
-        )`);
-
-        await pool.query(`CREATE TABLE IF NOT EXISTS admin (
-            id SERIAL PRIMARY KEY,
-            username TEXT UNIQUE,
-            password TEXT
-        )`);
-        
-        console.log('Database tables verified.');
-    } catch (err) {
-        console.error('Error initializing database:', err);
+    const profileRes = await pool.query('SELECT COUNT(*) as count FROM profile');
+    if (parseInt(profileRes.rows[0].count) === 0) {
+        await pool.query(
+            `INSERT INTO profile (name, title, bio) VALUES ($1, $2, $3)`,
+            ['Your Name', 'Software Developer', 'Welcome to my dynamic portfolio. Update this in the admin dashboard.']
+        );
     }
+
+    await pool.query(`CREATE TABLE IF NOT EXISTS experience (
+        id SERIAL PRIMARY KEY,
+        company TEXT,
+        role TEXT,
+        start_date TEXT,
+        end_date TEXT,
+        description TEXT
+    )`);
+
+    await pool.query(`CREATE TABLE IF NOT EXISTS projects (
+        id SERIAL PRIMARY KEY,
+        title TEXT,
+        description TEXT,
+        image_url TEXT,
+        demo_url TEXT,
+        github_url TEXT,
+        tech_stack TEXT
+    )`);
+
+    await pool.query(`CREATE TABLE IF NOT EXISTS skills (
+        id SERIAL PRIMARY KEY,
+        name TEXT,
+        category TEXT,
+        proficiency INTEGER
+    )`);
+
+    await pool.query(`CREATE TABLE IF NOT EXISTS education (
+        id SERIAL PRIMARY KEY,
+        institution TEXT,
+        degree TEXT,
+        start_date TEXT,
+        end_date TEXT,
+        description TEXT
+    )`);
+
+    await pool.query(`CREATE TABLE IF NOT EXISTS certifications (
+        id SERIAL PRIMARY KEY,
+        title TEXT,
+        issuer TEXT,
+        date TEXT,
+        url TEXT
+    )`);
+
+    await pool.query(`CREATE TABLE IF NOT EXISTS admin (
+        id SERIAL PRIMARY KEY,
+        username TEXT UNIQUE,
+        password TEXT
+    )`);
+
+    console.log('Database tables verified.');
 }
 
 pool.ready = initializeDatabase();

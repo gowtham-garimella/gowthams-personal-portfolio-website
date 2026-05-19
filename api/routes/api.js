@@ -73,6 +73,13 @@ router.get('/auth/status', async (req, res) => {
 router.post('/auth/setup', async (req, res) => {
     try {
         const { username, password } = req.body;
+        if (!username || !password) {
+            return res.status(400).json({ error: 'Username and password are required' });
+        }
+        if (password.length < 6) {
+            return res.status(400).json({ error: 'Password must be at least 6 characters' });
+        }
+
         const { rows } = await pool.query('SELECT COUNT(*) as count FROM admin');
         if (parseInt(rows[0].count) > 0) return res.status(400).json({ error: 'Already setup' });
         
