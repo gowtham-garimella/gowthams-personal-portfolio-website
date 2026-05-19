@@ -148,6 +148,6 @@ async function initializeDatabase() {
     }
 }
 
-initializeDatabase();
+pool.ready = initializeDatabase();
 
 module.exports = pool;

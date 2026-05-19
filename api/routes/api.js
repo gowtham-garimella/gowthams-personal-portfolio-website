@@ -10,6 +10,15 @@ const fs = require('fs');
 
 const JWT_SECRET = process.env.JWT_SECRET || 'super-secret-key-for-portfolio';
 
+router.use(async (req, res, next) => {
+    try {
+        await pool.ready;
+        next();
+    } catch (err) {
+        res.status(500).json({ error: 'Database initialization failed' });
+    }
+});
+
 let upload;
 const isVercelBlob = !!process.env.BLOB_READ_WRITE_TOKEN;
 
