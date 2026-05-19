@@ -10,11 +10,27 @@ const AdminDashboard = () => {
   const token = localStorage.getItem('adminToken');
 
   useEffect(() => {
-    if (!token) {
-      navigate('/admin/login');
-      return;
-    }
-    fetchData();
+    const checkAccess = async () => {
+      try {
+        const res = await axios.get('/api/auth/status');
+        if (!res.data.isSetup) {
+          localStorage.removeItem('adminToken');
+          navigate('/admin/setup');
+          return;
+        }
+
+        if (!token) {
+          navigate('/admin/login');
+          return;
+        }
+
+        fetchData();
+      } catch (err) {
+        console.error(err);
+      }
+    };
+
+    checkAccess();
   }, [token, navigate]);
 
   const fetchData = async () => {
