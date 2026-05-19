@@ -1,9 +1,112 @@
 const { Pool } = require('pg');
-const sqlite3 = require('sqlite3').verbose();
+const fs = require('fs');
 const path = require('path');
 
 let pool;
 let isPostgres = !!process.env.POSTGRES_URL;
+
+const tables = ['profile', 'experience', 'projects', 'skills', 'education', 'certifications', 'admin'];
+
+function createEmptyData() {
+    return Object.fromEntries(tables.map((table) => [table, []]));
+}
+
+function createJsonPool() {
+    const dataPath = path.join('/tmp', 'portfolio-data.json');
+
+    const readData = () => {
+        if (!fs.existsSync(dataPath)) return createEmptyData();
+        return { ...createEmptyData(), ...JSON.parse(fs.readFileSync(dataPath, 'utf8')) };
+    };
+
+    const writeData = (data) => {
+        fs.writeFileSync(dataPath, JSON.stringify(data, null, 2));
+    };
+
+    const nextId = (items) => Math.max(0, ...items.map((item) => Number(item.id) || 0)) + 1;
+
+    return {
+        query: async (text, params = []) => {
+            const data = readData();
+            const normalized = text.replace(/\s+/g, ' ').trim();
+
+            if (normalized.startsWith('CREATE TABLE')) return { rows: [] };
+
+            const countMatch = normalized.match(/^SELECT COUNT\(\*\) as count FROM (\w+)/i);
+            if (countMatch) {
+                return { rows: [{ count: data[countMatch[1]].length }] };
+            }
+
+            const selectWhereMatch = normalized.match(/^SELECT \* FROM (\w+) WHERE (\w+) = \$1/i);
+            if (selectWhereMatch) {
+                const [, table, field] = selectWhereMatch;
+                return { rows: data[table].filter((item) => item[field] === params[0]) };
+            }
+
+            const selectAllMatch = normalized.match(/^SELECT \* FROM (\w+)/i);
+            if (selectAllMatch) {
+                const table = selectAllMatch[1];
+                let rows = [...data[table]];
+                if (/ORDER BY id DESC/i.test(normalized)) rows.sort((a, b) => Number(b.id) - Number(a.id));
+                if (/ORDER BY start_date DESC/i.test(normalized)) rows.sort((a, b) => String(b.start_date || '').localeCompare(String(a.start_date || '')));
+                if (/ORDER BY date DESC/i.test(normalized)) rows.sort((a, b) => String(b.date || '').localeCompare(String(a.date || '')));
+                if (/LIMIT 1/i.test(normalized)) rows = rows.slice(0, 1);
+                return { rows };
+            }
+
+            const insertMatch = normalized.match(/^INSERT INTO (\w+) \(([^)]+)\) VALUES/i);
+            if (insertMatch) {
+                const [, table, keyText] = insertMatch;
+                const keys = keyText.split(',').map((key) => key.trim());
+                const row = { id: nextId(data[table]) };
+                keys.forEach((key, index) => {
+                    row[key] = params[index];
+                });
+                data[table].push(row);
+                writeData(data);
+                return { rows: [{ id: row.id }] };
+            }
+
+            const updateProfileMatch = normalized.match(/^UPDATE profile SET (.+) WHERE id = \(SELECT MIN\(id\) FROM profile\)/i);
+            if (updateProfileMatch) {
+                if (data.profile.length === 0) data.profile.push({ id: 1 });
+                const profile = data.profile.reduce((first, item) => Number(item.id) < Number(first.id) ? item : first, data.profile[0]);
+                updateProfileMatch[1].split(',').forEach((assignment, index) => {
+                    const key = assignment.split('=')[0].trim();
+                    profile[key] = params[index] ?? null;
+                });
+                writeData(data);
+                return { rows: [] };
+            }
+
+            const updateMatch = normalized.match(/^UPDATE (\w+) SET (.+) WHERE id=\$\d+/i);
+            if (updateMatch) {
+                const [, table, setClause] = updateMatch;
+                const id = params[params.length - 1];
+                const item = data[table].find((row) => String(row.id) === String(id));
+                if (item) {
+                    setClause.split(',').forEach((assignment, index) => {
+                        const key = assignment.split('=')[0].trim();
+                        item[key] = params[index];
+                    });
+                    writeData(data);
+                }
+                return { rows: [] };
+            }
+
+            const deleteMatch = normalized.match(/^DELETE FROM (\w+) WHERE id=\$1/i);
+            if (deleteMatch) {
+                const table = deleteMatch[1];
+                data[table] = data[table].filter((row) => String(row.id) !== String(params[0]));
+                writeData(data);
+                return { rows: [] };
+            }
+
+            throw new Error(`Unsupported JSON database query: ${normalized}`);
+        },
+        on: () => {}
+    };
+}
 
 if (isPostgres) {
     // Cloud setup (Vercel Postgres, Neon, Supabase)
@@ -21,22 +124,13 @@ if (isPostgres) {
         on: (event, callback) => pgPool.on(event, callback)
     };
     console.log('Using PostgreSQL database');
+} else if (process.env.VERCEL) {
+    pool = createJsonPool();
+    console.log('Using Vercel JSON fallback database');
 } else {
     // Local setup (SQLite)
-    // If hosted on Vercel without Postgres, /tmp is the only writable directory.
-    // We copy the committed portfolio.db to /tmp so data is preserved across instances.
-    const fs = require('fs');
-    const dbDir = process.env.VERCEL ? '/tmp' : __dirname;
-    const dbPath = path.join(dbDir, 'portfolio.db');
-    
-    if (process.env.VERCEL && !fs.existsSync(dbPath)) {
-        try {
-            fs.copyFileSync(path.join(__dirname, 'portfolio.db'), dbPath);
-            console.log('Copied committed SQLite database to /tmp');
-        } catch (err) {
-            console.error('Failed to copy database to /tmp:', err);
-        }
-    }
+    const sqlite3 = require('sqlite3').verbose();
+    const dbPath = path.join(__dirname, 'portfolio.db');
 
     const openMode = sqlite3.OPEN_READWRITE | sqlite3.OPEN_CREATE;
     const db = new sqlite3.Database(dbPath, openMode, (err) => {
