@@ -114,7 +114,14 @@ router.get('/portfolio', async (req, res) => {
     try {
         const data = {};
         const profileRes = await pool.query('SELECT * FROM profile ORDER BY id DESC LIMIT 1');
-        data.profile = profileRes.rows[0];
+        let profile = profileRes.rows[0];
+        if (profile) {
+            // Replace large base64 data URIs with API endpoints to prevent Vercel payload limit crashes
+            if (profile.resume_url && profile.resume_url.startsWith('data:')) profile.resume_url = '/api/files/resume';
+            if (profile.avatar_url && profile.avatar_url.startsWith('data:')) profile.avatar_url = '/api/files/avatar';
+            if (profile.background_url && profile.background_url.startsWith('data:')) profile.background_url = '/api/files/background';
+        }
+        data.profile = profile;
         
         const expRes = await pool.query('SELECT * FROM experience ORDER BY start_date DESC');
         data.experience = expRes.rows;
@@ -132,6 +139,41 @@ router.get('/portfolio', async (req, res) => {
         data.certifications = certRes.rows;
         
         res.json(data);
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// --- PUBLIC FILE ROUTE ---
+router.get('/files/:type', async (req, res) => {
+    try {
+        const type = req.params.type;
+        const profileRes = await pool.query('SELECT * FROM profile ORDER BY id DESC LIMIT 1');
+        if (profileRes.rows.length === 0) return res.status(404).send('Not found');
+        
+        const profile = profileRes.rows[0];
+        let dataUri;
+        if (type === 'resume') dataUri = profile.resume_url;
+        else if (type === 'avatar') dataUri = profile.avatar_url;
+        else if (type === 'background') dataUri = profile.background_url;
+        
+        if (!dataUri || !dataUri.startsWith('data:')) {
+            return res.redirect(dataUri || '/');
+        }
+        
+        // Extract base64
+        const matches = dataUri.match(/^data:([a-zA-Z0-9]+\/[a-zA-Z0-9-.+]+);base64,(.+)$/);
+        if (!matches || matches.length !== 3) return res.status(400).send('Invalid data URI');
+        
+        const mimeType = matches[1];
+        const base64Data = matches[2];
+        const buffer = Buffer.from(base64Data, 'base64');
+        
+        res.set('Content-Type', mimeType);
+        if (type === 'resume') {
+            res.set('Content-Disposition', 'inline; filename="resume.pdf"');
+        }
+        res.send(buffer);
     } catch (err) {
         res.status(500).json({ error: err.message });
     }
