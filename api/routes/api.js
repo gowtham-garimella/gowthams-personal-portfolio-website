@@ -21,14 +21,15 @@ router.use(async (req, res, next) => {
 
 let upload;
 const isVercelBlob = !!process.env.BLOB_READ_WRITE_TOKEN;
+const isCloudDb = process.env.VERCEL || process.env.POSTGRES_URL;
 
-if (isVercelBlob) {
-    // Cloud setup (Vercel Blob)
+if (isVercelBlob || isCloudDb) {
+    // Cloud setup (Vercel Blob or Base64 in DB)
     upload = multer({ storage: multer.memoryStorage() });
-    console.log('Using Vercel Blob for uploads');
+    console.log('Using memory storage for cloud uploads');
 } else {
     // Local setup (Disk Storage)
-    const baseDir = process.env.VERCEL ? '/tmp' : path.join(__dirname, '..');
+    const baseDir = path.join(__dirname, '..');
     const uploadDir = path.join(baseDir, 'uploads');
     if (!fs.existsSync(uploadDir)) {
         fs.mkdirSync(uploadDir, { recursive: true });
@@ -162,6 +163,11 @@ router.post('/upload/:type', authenticateToken, upload.single('file'), async (re
                 access: 'public',
             });
             url = blob.url;
+        } else if (isCloudDb) {
+            // Convert file to Base64 Data URI for storage in PostgreSQL
+            const b64 = req.file.buffer.toString('base64');
+            const mimeType = req.file.mimetype;
+            url = `data:${mimeType};base64,${b64}`;
         } else {
             url = `/api/uploads/${req.file.filename}`;
         }

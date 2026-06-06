@@ -15,7 +15,7 @@
   ],
   "functions": {
     "api/[...path].js": {
-      "includeFiles": "api/{database/portfolio.db,uploads/**}"
+      "includeFiles": "api/database/portfolio.db"
     }
   }
 }
