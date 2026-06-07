@@ -13,21 +13,65 @@ function createEmptyData() {
 
 function createJsonPool() {
     const dataPath = path.join('/tmp', 'portfolio-data.json');
+    let blobLoaded = false;
 
-    const readData = () => {
-        if (!fs.existsSync(dataPath)) return createEmptyData();
-        return { ...createEmptyData(), ...JSON.parse(fs.readFileSync(dataPath, 'utf8')) };
+    const downloadFromBlob = async () => {
+        if (!process.env.BLOB_READ_WRITE_TOKEN) return false;
+        try {
+            const { list } = require('@vercel/blob');
+            const { blobs } = await list({ prefix: 'portfolio-data.json' });
+            const targetBlob = blobs.find(b => b.pathname === 'portfolio-data.json');
+            if (targetBlob) {
+                const response = await fetch(targetBlob.url);
+                if (response.ok) {
+                    const text = await response.text();
+                    fs.writeFileSync(dataPath, text);
+                    return true;
+                }
+            }
+        } catch (err) {
+            console.error("Error downloading from Blob:", err);
+        }
+        return false;
     };
 
-    const writeData = (data) => {
+    const uploadToBlob = async () => {
+        if (!process.env.BLOB_READ_WRITE_TOKEN) return;
+        try {
+            const { put } = require('@vercel/blob');
+            const content = fs.readFileSync(dataPath, 'utf8');
+            await put('portfolio-data.json', content, {
+                access: 'public',
+                addRandomSuffix: false,
+            });
+        } catch (err) {
+            console.error("Error uploading to Blob:", err);
+        }
+    };
+
+    const readData = async () => {
+        if (!blobLoaded) {
+            await downloadFromBlob();
+            blobLoaded = true;
+        }
+        if (!fs.existsSync(dataPath)) return createEmptyData();
+        try {
+            return { ...createEmptyData(), ...JSON.parse(fs.readFileSync(dataPath, 'utf8')) };
+        } catch (e) {
+            return createEmptyData();
+        }
+    };
+
+    const writeData = async (data) => {
         fs.writeFileSync(dataPath, JSON.stringify(data, null, 2));
+        await uploadToBlob();
     };
 
     const nextId = (items) => Math.max(0, ...items.map((item) => Number(item.id) || 0)) + 1;
 
     return {
         query: async (text, params = []) => {
-            const data = readData();
+            const data = await readData();
             const normalized = text.replace(/\s+/g, ' ').trim();
 
             if (normalized.startsWith('CREATE TABLE')) return { rows: [] };
@@ -63,7 +107,7 @@ function createJsonPool() {
                     row[key] = params[index];
                 });
                 data[table].push(row);
-                writeData(data);
+                await writeData(data);
                 return { rows: [{ id: row.id }] };
             }
 
@@ -75,7 +119,7 @@ function createJsonPool() {
                     const key = assignment.split('=')[0].trim();
                     profile[key] = params[index] ?? null;
                 });
-                writeData(data);
+                await writeData(data);
                 return { rows: [] };
             }
 
@@ -89,7 +133,7 @@ function createJsonPool() {
                         const key = assignment.split('=')[0].trim();
                         item[key] = params[index];
                     });
-                    writeData(data);
+                    await writeData(data);
                 }
                 return { rows: [] };
             }
@@ -98,7 +142,7 @@ function createJsonPool() {
             if (deleteMatch) {
                 const table = deleteMatch[1];
                 data[table] = data[table].filter((row) => String(row.id) !== String(params[0]));
-                writeData(data);
+                await writeData(data);
                 return { rows: [] };
             }
 
