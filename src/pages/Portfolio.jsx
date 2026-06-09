@@ -68,6 +68,7 @@ const BackgroundAnimation = () => {  // Software dev elements to float around
 const Portfolio = () => {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
   useEffect(() => {
     axios.get('/api/portfolio')
@@ -77,11 +78,33 @@ const Portfolio = () => {
       })
       .catch(err => {
         console.error("Error fetching portfolio data:", err);
+        setError(err.response?.data?.details || err.response?.data?.error || err.message);
         setLoading(false);
       });
   }, []);
 
   if (loading) return <div className="loader"></div>;
+
+  if (error) {
+    return (
+      <div className="container section" style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '80vh', flexDirection: 'column', textAlign: 'center' }}>
+        <div className="glass" style={{ padding: '3rem', width: '100%', maxWidth: '600px', border: '1px solid #ef4444' }}>
+          <h2 style={{ color: '#ef4444', marginBottom: '1rem' }}>Database Connection Error</h2>
+          <p style={{ marginBottom: '1.5rem', lineHeight: '1.6' }}>
+            The application failed to connect to or initialize the database. This occurs if environment variables are missing or incorrect.
+          </p>
+          <div style={{ background: 'rgba(239, 68, 68, 0.1)', borderLeft: '4px solid #ef4444', padding: '1rem', borderRadius: '4px', textAlign: 'left', marginBottom: '1.5rem', overflowX: 'auto' }}>
+            <strong style={{ display: 'block', marginBottom: '0.5rem', color: '#ef4444' }}>Error Details:</strong>
+            <code style={{ fontFamily: 'monospace', fontSize: '0.9rem', color: 'white' }}>{error}</code>
+          </div>
+          <p style={{ fontSize: '0.95rem', color: 'var(--text-secondary)' }}>
+            Please verify your database connection strings (e.g. <code>POSTGRES_URL</code> or <code>DATABASE_URL</code>) are configured properly in your Vercel Project Settings and redeploy.
+          </p>
+        </div>
+      </div>
+    );
+  }
+
   if (!data || !data.profile) return <div className="container section"><h1>Portfolio not setup yet. Go to <a href="/admin/setup" style={{color: 'var(--accent-color)'}}>/admin/setup</a></h1></div>;
 
   const { profile, experience, projects, skills, education, certifications } = data;

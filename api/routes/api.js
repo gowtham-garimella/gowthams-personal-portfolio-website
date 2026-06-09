@@ -15,13 +15,14 @@ router.use(async (req, res, next) => {
         await pool.ready;
         next();
     } catch (err) {
-        res.status(500).json({ error: 'Database initialization failed' });
+        console.error("Database initialization failed middleware caught:", err);
+        res.status(500).json({ error: 'Database initialization failed', details: err.message });
     }
 });
 
 let upload;
 const isVercelBlob = !!process.env.BLOB_READ_WRITE_TOKEN;
-const isCloudDb = process.env.VERCEL || process.env.POSTGRES_URL;
+const isCloudDb = process.env.VERCEL || process.env.POSTGRES_URL || process.env.DATABASE_URL;
 
 if (isVercelBlob || isCloudDb) {
     // Cloud setup (Vercel Blob or Base64 in DB)
@@ -113,7 +114,21 @@ router.post('/auth/login', async (req, res) => {
 router.get('/portfolio', async (req, res) => {
     try {
         const data = {};
-        const profileRes = await pool.query('SELECT * FROM profile ORDER BY id DESC LIMIT 1');
+        let profileRes;
+        if (pool.isPostgres) {
+            // optimized query for Postgres to avoid loading large base64 fields into memory
+            profileRes = await pool.query(`
+                SELECT id, name, title, bio, email, phone, github, linkedin, twitter,
+                       (CASE WHEN resume_url LIKE 'data:%' THEN '/api/files/resume' ELSE resume_url END) as resume_url,
+                       (CASE WHEN avatar_url LIKE 'data:%' THEN '/api/files/avatar' ELSE avatar_url END) as avatar_url,
+                       (CASE WHEN background_url LIKE 'data:%' THEN '/api/files/background' ELSE background_url END) as background_url
+                FROM profile 
+                ORDER BY id DESC 
+                LIMIT 1
+            `);
+        } else {
+            profileRes = await pool.query('SELECT * FROM profile ORDER BY id DESC LIMIT 1');
+        }
         let profile = profileRes.rows[0];
         if (profile) {
             // Replace large base64 data URIs with API endpoints to prevent Vercel payload limit crashes

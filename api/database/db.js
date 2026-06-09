@@ -3,7 +3,8 @@ const fs = require('fs');
 const path = require('path');
 
 let pool;
-let isPostgres = !!process.env.POSTGRES_URL;
+const connectionString = process.env.POSTGRES_URL || process.env.DATABASE_URL;
+let isPostgres = !!connectionString;
 
 const tables = ['profile', 'experience', 'projects', 'skills', 'education', 'certifications', 'admin'];
 
@@ -155,8 +156,11 @@ function createJsonPool() {
 if (isPostgres) {
     // Cloud setup (Vercel Postgres, Neon, Supabase)
     const pgPool = new Pool({
-        connectionString: process.env.POSTGRES_URL,
-        ssl: { rejectUnauthorized: false }
+        connectionString: connectionString,
+        ssl: { rejectUnauthorized: false },
+        max: 4,                      // limit connection usage per serverless function instance
+        idleTimeoutMillis: 30000,    // close idle connections after 30 seconds
+        connectionTimeoutMillis: 15000 // wait 15 seconds max to connect (gives Neon time to wake up)
     });
     
     pgPool.on('error', (err) => {
@@ -164,7 +168,29 @@ if (isPostgres) {
     });
 
     pool = {
-        query: (text, params) => pgPool.query(text, params),
+        query: async (text, params) => {
+            let attempts = 3;
+            while (attempts > 0) {
+                try {
+                    return await pgPool.query(text, params);
+                } catch (err) {
+                    attempts--;
+                    const isNetworkOrTimeout = 
+                        err.message.includes('timeout') || 
+                        err.message.includes('connect') || 
+                        err.code === 'ETIMEDOUT' || 
+                        err.code === 'ECONNREFUSED' ||
+                        err.message.includes('connection');
+                    
+                    if (isNetworkOrTimeout && attempts > 0) {
+                        console.warn(`Database query failed (timeout/connection), retrying in 2s... (${attempts} attempts left). Error: ${err.message}`);
+                        await new Promise(resolve => setTimeout(resolve, 2000));
+                    } else {
+                        throw err;
+                    }
+                }
+            }
+        },
         on: (event, callback) => pgPool.on(event, callback)
     };
     console.log('Using PostgreSQL database');
@@ -282,6 +308,32 @@ async function initializeDatabase() {
     console.log('Database tables verified.');
 }
 
-pool.ready = initializeDatabase();
+let isInitialized = false;
+let initPromise = null;
+
+async function ensureInitialized() {
+    if (isInitialized) return;
+    if (!initPromise) {
+        initPromise = initializeDatabase()
+            .then(() => {
+                isInitialized = true;
+            })
+            .catch((err) => {
+                console.error("Database initialization failed. Will retry on next request:", err);
+                initPromise = null; // Clear so next request retries
+                throw err;
+            });
+    }
+    return initPromise;
+}
+
+pool.isPostgres = isPostgres;
+
+// Define a ready property that retries initialization on access
+Object.defineProperty(pool, 'ready', {
+    get: () => ensureInitialized(),
+    configurable: true,
+    enumerable: true
+});
 
 module.exports = pool;
