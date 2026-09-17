@@ -6,7 +6,7 @@ let pool;
 const connectionString = process.env.POSTGRES_URL || process.env.DATABASE_URL;
 let isPostgres = !!connectionString;
 
-const tables = ['profile', 'experience', 'projects', 'skills', 'education', 'certifications', 'admin'];
+const tables = ['profile', 'experience', 'projects', 'skills', 'education', 'certifications', 'research_papers', 'admin'];
 
 function createEmptyData() {
     return Object.fromEntries(tables.map((table) => [table, []]));
@@ -297,6 +297,19 @@ async function initializeDatabase() {
         issuer TEXT,
         date TEXT,
         url TEXT
+    )`);
+
+    await pool.query(`CREATE TABLE IF NOT EXISTS research_papers (
+        id SERIAL PRIMARY KEY,
+        title TEXT,
+        authors TEXT,
+        publication_date TEXT,
+        journal_or_conference TEXT,
+        description TEXT,
+        paper_url TEXT,
+        paper_filename TEXT,
+        proof_url TEXT,
+        proof_filename TEXT
     )`);
 
     await pool.query(`CREATE TABLE IF NOT EXISTS admin (

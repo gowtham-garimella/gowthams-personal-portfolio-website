@@ -153,6 +153,15 @@ router.get('/portfolio', async (req, res) => {
         const certRes = await pool.query('SELECT * FROM certifications ORDER BY date DESC');
         data.certifications = certRes.rows;
         
+        const researchRes = await pool.query('SELECT * FROM research_papers ORDER BY id DESC');
+        data.research_papers = researchRes.rows.map(row => ({
+            ...row,
+            paper_download_url: row.paper_url ? `/api/research/download/${row.id}/paper` : null,
+            proof_download_url: row.proof_url ? (row.proof_url.startsWith('http') && !row.proof_url.startsWith('data:') && !row.proof_url.startsWith('/api') ? row.proof_url : `/api/research/download/${row.id}/proof`) : null,
+            paper_url: row.paper_url && row.paper_url.startsWith('data:') ? `/api/research/download/${row.id}/paper` : row.paper_url,
+            proof_url: row.proof_url && row.proof_url.startsWith('data:') ? `/api/research/download/${row.id}/proof` : row.proof_url
+        }));
+        
         res.json(data);
     } catch (err) {
         res.status(500).json({ error: err.message });
@@ -189,6 +198,54 @@ router.get('/files/:type', async (req, res) => {
             res.set('Content-Disposition', 'inline; filename="resume.pdf"');
         }
         res.send(buffer);
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// --- RESEARCH PAPER DOWNLOAD & VIEW ROUTE ---
+router.get('/research/download/:id/:fileType', async (req, res) => {
+    try {
+        const { id, fileType } = req.params;
+        const result = await pool.query('SELECT * FROM research_papers WHERE id = $1', [id]);
+        if (result.rows.length === 0) return res.status(404).send('Research paper not found');
+        
+        const paper = result.rows[0];
+        const fileUrl = fileType === 'proof' ? paper.proof_url : paper.paper_url;
+        let filename = fileType === 'proof' 
+            ? (paper.proof_filename || `proof_${paper.id}`) 
+            : (paper.paper_filename || `${(paper.title || 'research_paper').replace(/[^a-zA-Z0-9_-]/g, '_')}`);
+        
+        if (!fileUrl) return res.status(404).send('File not found');
+
+        if (fileUrl.startsWith('data:')) {
+            const matches = fileUrl.match(/^data:([a-zA-Z0-9\/\-.+]+);base64,(.+)$/);
+            if (!matches || matches.length !== 3) return res.status(400).send('Invalid data URI');
+            
+            const mimeType = matches[1];
+            const base64Data = matches[2];
+            const buffer = Buffer.from(base64Data, 'base64');
+            
+            if (!filename.includes('.')) {
+                if (mimeType.includes('pdf')) filename += '.pdf';
+                else if (mimeType.includes('word') || mimeType.includes('officedocument')) filename += '.docx';
+                else if (mimeType.includes('png')) filename += '.png';
+                else if (mimeType.includes('jpeg') || mimeType.includes('jpg')) filename += '.jpg';
+            }
+
+            res.set('Content-Type', mimeType);
+            res.set('Content-Disposition', `attachment; filename="${encodeURIComponent(filename)}"`);
+            return res.send(buffer);
+        } else if (fileUrl.startsWith('/api/uploads/')) {
+            const localFileName = path.basename(fileUrl);
+            const filePath = path.join(__dirname, '..', 'uploads', localFileName);
+            if (fs.existsSync(filePath)) {
+                return res.download(filePath, filename);
+            }
+            return res.redirect(fileUrl);
+        } else {
+            return res.redirect(fileUrl);
+        }
     } catch (err) {
         res.status(500).json({ error: err.message });
     }
@@ -241,7 +298,7 @@ router.post('/upload/:type', authenticateToken, upload.single('file'), async (re
         if (query) {
             await pool.query(query, [url]);
         }
-        res.json({ url });
+        res.json({ url, originalname: req.file.originalname });
     } catch (err) {
         res.status(500).json({ error: err.message });
     }
@@ -272,7 +329,7 @@ router.delete('/upload/:type', authenticateToken, async (req, res) => {
 router.post('/:table', authenticateToken, async (req, res) => {
     try {
         const table = req.params.table;
-        const allowedTables = ['projects', 'experience', 'skills', 'education', 'certifications'];
+        const allowedTables = ['projects', 'experience', 'skills', 'education', 'certifications', 'research_papers'];
         if (!allowedTables.includes(table)) return res.status(400).json({ error: 'Invalid table' });
         
         const keys = Object.keys(req.body);
@@ -292,7 +349,7 @@ router.post('/:table', authenticateToken, async (req, res) => {
 router.put('/:table/:id', authenticateToken, async (req, res) => {
     try {
         const table = req.params.table;
-        const allowedTables = ['projects', 'experience', 'skills', 'education', 'certifications'];
+        const allowedTables = ['projects', 'experience', 'skills', 'education', 'certifications', 'research_papers'];
         if (!allowedTables.includes(table)) return res.status(400).json({ error: 'Invalid table' });
         
         const id = req.params.id;
@@ -314,7 +371,7 @@ router.put('/:table/:id', authenticateToken, async (req, res) => {
 router.delete('/:table/:id', authenticateToken, async (req, res) => {
     try {
         const table = req.params.table;
-        const allowedTables = ['projects', 'experience', 'skills', 'education', 'certifications'];
+        const allowedTables = ['projects', 'experience', 'skills', 'education', 'certifications', 'research_papers'];
         if (!allowedTables.includes(table)) return res.status(400).json({ error: 'Invalid table' });
         
         await pool.query(`DELETE FROM ${table} WHERE id=$1`, [req.params.id]);

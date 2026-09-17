@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
 import { motion } from 'framer-motion';
-import { Github, Linkedin, Twitter, Mail, ExternalLink, Briefcase, Code, User, BookOpen, Terminal, Database, Cpu, Server, HardDrive, Monitor, Wifi, Layers, Box, Network, Medal } from 'lucide-react';
+import { Github, Linkedin, Twitter, Mail, ExternalLink, Briefcase, Code, User, BookOpen, Terminal, Database, Cpu, Server, HardDrive, Monitor, Wifi, Layers, Box, Network, Medal, FileText, Download, FileCheck } from 'lucide-react';
 
 const BackgroundAnimation = () => {  // Software dev elements to float around
   const elements = [
@@ -107,7 +107,7 @@ const Portfolio = () => {
 
   if (!data || !data.profile) return <div className="container section"><h1>Portfolio not setup yet. Go to <a href="/admin/setup" style={{color: 'var(--accent-color)'}}>/admin/setup</a></h1></div>;
 
-  const { profile, experience, projects, skills, education, certifications } = data;
+  const { profile, experience, projects, skills, education, certifications, research_papers } = data;
 
   const containerVariants = {
     hidden: { opacity: 0 },
@@ -242,6 +242,123 @@ const Portfolio = () => {
                     {proj.github_url && <a href={proj.github_url} target="_blank" rel="noreferrer" className="btn-secondary" style={{ padding: '0.5rem 1rem' }}><Github size={18}/></a>}
                     {proj.demo_url && <a href={proj.demo_url} target="_blank" rel="noreferrer" className="btn-primary" style={{ padding: '0.5rem 1rem' }}><ExternalLink size={18}/> Live</a>}
                   </div>
+                </div>
+              </motion.div>
+            ))}
+          </motion.div>
+        </section>
+      )}
+
+      {/* Research Papers Section */}
+      {research_papers && research_papers.length > 0 && (
+        <section className="section container">
+          <h2><FileText style={{ display: 'inline', marginRight: '10px' }}/> Research Papers</h2>
+          <motion.div 
+            variants={containerVariants} initial="hidden" whileInView="visible" viewport={{ once: true }}
+            style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(340px, 1fr))', gap: '2rem' }}
+          >
+            {research_papers.map(paper => (
+              <motion.div 
+                key={paper.id} 
+                variants={itemVariants} 
+                whileHover={{ y: -8 }} 
+                className="glass" 
+                style={{ 
+                  padding: '2rem', 
+                  display: 'flex', 
+                  flexDirection: 'column', 
+                  justifyContent: 'space-between',
+                  background: 'rgba(10, 10, 10, 0.5)',
+                  border: '1px solid rgba(139, 92, 246, 0.2)',
+                  borderRadius: '16px',
+                  position: 'relative',
+                  overflow: 'hidden'
+                }}
+              >
+                <div style={{
+                  position: 'absolute', top: '-40px', right: '-40px', width: '100px', height: '100px',
+                  background: 'radial-gradient(circle, rgba(139, 92, 246, 0.25) 0%, transparent 70%)',
+                  borderRadius: '50%', pointerEvents: 'none'
+                }} />
+
+                <div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '1rem', marginBottom: '0.75rem', flexWrap: 'wrap' }}>
+                    <span style={{ 
+                      fontSize: '0.8rem', 
+                      fontWeight: '600', 
+                      color: '#38bdf8', 
+                      background: 'rgba(56, 189, 248, 0.1)', 
+                      padding: '0.3rem 0.75rem', 
+                      borderRadius: '20px',
+                      border: '1px solid rgba(56, 189, 248, 0.2)',
+                      letterSpacing: '0.5px'
+                    }}>
+                      {paper.journal_or_conference || 'Research Publication'}
+                    </span>
+                    {paper.publication_date && (
+                      <span style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
+                        {paper.publication_date}
+                      </span>
+                    )}
+                  </div>
+
+                  <h3 style={{ fontSize: '1.35rem', lineHeight: '1.4', marginBottom: '0.5rem', color: 'var(--text-primary)' }}>
+                    {paper.title}
+                  </h3>
+
+                  {paper.authors && (
+                    <p style={{ fontSize: '0.9rem', color: 'var(--accent-color)', marginBottom: '1rem', fontWeight: '500' }}>
+                      {paper.authors}
+                    </p>
+                  )}
+
+                  {paper.description && (
+                    <p style={{ fontSize: '0.95rem', color: 'rgba(255, 255, 255, 0.75)', lineHeight: '1.6', marginBottom: '1.5rem', whiteSpace: 'pre-line' }}>
+                      {paper.description}
+                    </p>
+                  )}
+                </div>
+
+                {/* Actions: Download Paper & Proof of Publication */}
+                <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap', paddingTop: '1rem', borderTop: '1px solid rgba(255, 255, 255, 0.08)' }}>
+                  {(paper.paper_download_url || paper.paper_url) && (
+                    <a 
+                      href={paper.paper_download_url || paper.paper_url} 
+                      download 
+                      target="_blank" 
+                      rel="noreferrer" 
+                      className="btn-primary" 
+                      style={{ 
+                        padding: '0.6rem 1.25rem', 
+                        fontSize: '0.9rem', 
+                        display: 'inline-flex', 
+                        alignItems: 'center', 
+                        gap: '0.5rem',
+                        textDecoration: 'none'
+                      }}
+                    >
+                      <Download size={16} /> Download Paper (PDF)
+                    </a>
+                  )}
+
+                  {(paper.proof_download_url || paper.proof_url) && (
+                    <a 
+                      href={paper.proof_download_url || paper.proof_url} 
+                      target="_blank" 
+                      rel="noreferrer" 
+                      className="btn-secondary" 
+                      style={{ 
+                        padding: '0.6rem 1rem', 
+                        fontSize: '0.9rem', 
+                        display: 'inline-flex', 
+                        alignItems: 'center', 
+                        gap: '0.5rem',
+                        textDecoration: 'none'
+                      }}
+                    >
+                      <FileCheck size={16} color="#38bdf8" /> Publication Proof
+                    </a>
+                  )}
                 </div>
               </motion.div>
             ))}
