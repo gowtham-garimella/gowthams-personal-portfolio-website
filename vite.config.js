@@ -9,6 +9,24 @@ export default defineConfig({
       '/api': {
         target: 'http://localhost:8000',
         changeOrigin: true,
+        bypass: (req) => {
+          if (req.url.startsWith('/api/uploads')) {
+            return req.url;
+          }
+        }
+      }
+    }
+  },
+  preview: {
+    proxy: {
+      '/api': {
+        target: 'http://localhost:8000',
+        changeOrigin: true,
+        bypass: (req) => {
+          if (req.url.startsWith('/api/uploads')) {
+            return req.url;
+          }
+        }
       }
     }
   }
