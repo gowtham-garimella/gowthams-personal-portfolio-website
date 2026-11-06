@@ -82,12 +82,19 @@ router.post('/auth/setup', async (req, res) => {
             return res.status(400).json({ error: 'Password must be at least 6 characters' });
         }
 
-        const { rows } = await pool.query('SELECT COUNT(*) as count FROM admin');
-        if (parseInt(rows[0].count) > 0) return res.status(400).json({ error: 'Already setup' });
-        
         const hashedPassword = await bcrypt.hash(password, 10);
-        await pool.query('INSERT INTO admin (username, password) VALUES ($1, $2)', [username, hashedPassword]);
-        res.json({ success: true });
+        const { rows } = await pool.query('SELECT * FROM admin');
+        
+        if (rows && rows.length > 0) {
+            // Update existing admin account
+            const adminId = rows[0].id;
+            await pool.query('UPDATE admin SET username = $1, password = $2 WHERE id=$3', [username, hashedPassword, adminId]);
+            return res.json({ success: true, message: 'Admin credentials updated successfully' });
+        } else {
+            // Insert initial admin account
+            await pool.query('INSERT INTO admin (username, password) VALUES ($1, $2)', [username, hashedPassword]);
+            return res.json({ success: true, message: 'Admin created successfully' });
+        }
     } catch (err) {
         res.status(500).json({ error: err.message });
     }

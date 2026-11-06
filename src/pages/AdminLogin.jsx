@@ -2,16 +2,18 @@ import React, { useEffect, useState } from 'react';
 import axios from 'axios';
 import { useNavigate, Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Lock, User, Key, ArrowLeft, ShieldCheck, Sparkles } from 'lucide-react';
+import { Lock, User, Key, ArrowLeft, ShieldCheck, Eye, EyeOff, Check, RefreshCw } from 'lucide-react';
 
 const AdminLogin = () => {
   const [isSetup, setIsSetup] = useState(true);
   const [mode, setMode] = useState('login'); // 'login' or 'setup'
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [loading, setLoading] = useState(true);
+  const [submitting, setSubmitting] = useState(false);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -23,7 +25,8 @@ const AdminLogin = () => {
         }
         setLoading(false);
       })
-      .catch(() => {
+      .catch((err) => {
+        console.warn("Auth status fetch error:", err.message);
         setLoading(false);
       });
   }, []);
@@ -32,86 +35,67 @@ const AdminLogin = () => {
     e.preventDefault();
     setError('');
     setSuccess('');
+    setSubmitting(true);
 
     if (mode === 'setup') {
       try {
-        await axios.post('/api/auth/setup', { username, password });
-        setSuccess('Admin created successfully! Now logging in...');
-        // Automatically login right after setup
+        const setupRes = await axios.post('/api/auth/setup', { username, password });
+        setSuccess(setupRes.data.message || 'Admin account ready! Authenticating...');
+        
+        // Automatically login right after setup/reset
         const loginRes = await axios.post('/api/auth/login', { username, password });
-        localStorage.setItem('adminToken', loginRes.data.token);
-        setTimeout(() => navigate('/admin/dashboard'), 800);
+        if (loginRes.data && loginRes.data.token) {
+          localStorage.setItem('adminToken', loginRes.data.token);
+          setTimeout(() => navigate('/admin/dashboard'), 600);
+        } else {
+          setMode('login');
+          setSubmitting(false);
+        }
       } catch (err) {
-        setError(err.response?.data?.error || 'Setup failed');
+        setError(err.response?.data?.error || err.message || 'Setup / Password reset failed');
+        setSubmitting(false);
       }
     } else {
       try {
         const res = await axios.post('/api/auth/login', { username, password });
-        localStorage.setItem('adminToken', res.data.token);
-        navigate('/admin/dashboard');
+        if (res.data && res.data.token) {
+          localStorage.setItem('adminToken', res.data.token);
+          setSuccess('Login successful! Redirecting to dashboard...');
+          setTimeout(() => navigate('/admin/dashboard'), 500);
+        } else {
+          setError('No token received from server');
+          setSubmitting(false);
+        }
       } catch (err) {
-        setError(err.response?.data?.error || 'Invalid username or password');
+        setError(err.response?.data?.error || 'Invalid username or password. If you forgot your password, switch to the Reset / Setup tab above.');
+        setSubmitting(false);
       }
     }
   };
 
-  if (loading) return <div className="loader"></div>;
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-[#0C0C0C] flex flex-col justify-center items-center text-white">
+        <div className="loader"></div>
+        <p className="text-xs uppercase tracking-widest text-cyan-400 mt-4 font-mono">
+          Connecting to Admin Portal...
+        </p>
+      </div>
+    );
+  }
 
   return (
-    <div style={{
-      minHeight: '100vh',
-      backgroundColor: '#000000',
-      color: '#ffffff',
-      display: 'flex',
-      flexDirection: 'column',
-      justifyContent: 'center',
-      alignItems: 'center',
-      padding: '2rem 1.5rem',
-      position: 'relative',
-      overflow: 'hidden'
-    }}>
+    <div className="min-h-screen bg-[#0C0C0C] text-[#D7E2EA] font-kanit flex flex-col justify-center items-center p-6 relative overflow-hidden select-none">
+      
       {/* Background Ambient Glows */}
-      <div style={{
-        position: 'absolute',
-        top: '20%',
-        left: '15%',
-        width: '400px',
-        height: '400px',
-        borderRadius: '50%',
-        background: 'radial-gradient(circle, rgba(0, 240, 255, 0.08) 0%, transparent 70%)',
-        pointerEvents: 'none'
-      }} />
-      <div style={{
-        position: 'absolute',
-        bottom: '20%',
-        right: '15%',
-        width: '450px',
-        height: '450px',
-        borderRadius: '50%',
-        background: 'radial-gradient(circle, rgba(168, 85, 247, 0.08) 0%, transparent 70%)',
-        pointerEvents: 'none'
-      }} />
+      <div className="absolute top-1/4 left-1/4 w-[450px] h-[450px] rounded-full bg-cyan-600/10 blur-[130px] pointer-events-none" />
+      <div className="absolute bottom-1/4 right-1/4 w-[500px] h-[500px] rounded-full bg-purple-600/10 blur-[140px] pointer-events-none" />
 
       {/* Top Return Link */}
-      <div style={{ position: 'absolute', top: '2rem', left: '2rem' }}>
+      <div className="absolute top-6 left-6 z-20">
         <Link 
           to="/" 
-          style={{ 
-            display: 'inline-flex', 
-            alignItems: 'center', 
-            gap: '0.5rem', 
-            color: 'rgba(255, 255, 255, 0.7)',
-            fontSize: '0.85rem',
-            fontFamily: 'var(--font-pixel)',
-            letterSpacing: '0.08em',
-            padding: '0.4rem 0.8rem',
-            border: '1px solid rgba(255, 255, 255, 0.2)',
-            borderRadius: '6px',
-            background: 'rgba(0,0,0,0.5)',
-            backdropFilter: 'blur(8px)'
-          }}
-          onMouseOver={e => e.currentTarget.style.color = '#00f0ff'}
-          onMouseOut={e => e.currentTarget.style.color = 'rgba(255, 255, 255, 0.7)'}
+          className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-white/5 border border-white/10 text-white/80 hover:text-white hover:border-cyan-400/50 hover:bg-white/10 text-xs font-semibold tracking-wider transition-all shadow-md"
         >
           <ArrowLeft size={16} /> RETURN TO PORTFOLIO
         </Link>
@@ -119,184 +103,157 @@ const AdminLogin = () => {
 
       {/* Login / Setup Card */}
       <motion.div
-        initial={{ opacity: 0, y: 20, scale: 0.96 }}
+        initial={{ opacity: 0, y: 20, scale: 0.98 }}
         animate={{ opacity: 1, y: 0, scale: 1 }}
-        transition={{ duration: 0.5 }}
-        className="glass-neon"
-        style={{
-          width: '100%',
-          maxWidth: '440px',
-          padding: '2.75rem 2.5rem',
-          position: 'relative',
-          zIndex: 10
-        }}
+        transition={{ duration: 0.4 }}
+        className="glass-neon w-full max-w-md p-8 sm:p-10 relative z-10 shadow-2xl"
       >
         {/* Header Icon & Title */}
-        <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
-          <div style={{
-            width: '56px',
-            height: '56px',
-            borderRadius: '12px',
-            background: 'linear-gradient(135deg, rgba(0,240,255,0.15), rgba(168,85,247,0.15))',
-            border: '1px solid rgba(0, 240, 255, 0.4)',
-            display: 'inline-flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            marginBottom: '1rem',
-            boxShadow: '0 0 20px rgba(0, 240, 255, 0.2)'
-          }}>
-            {mode === 'setup' ? <ShieldCheck size={28} color="#00f0ff" /> : <Lock size={28} color="#a855f7" />}
+        <div className="text-center mb-6">
+          <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-cyan-500/20 to-purple-600/20 border border-cyan-400/40 inline-flex items-center justify-center mb-3 shadow-[0_0_20px_rgba(0,240,255,0.2)]">
+            {mode === 'setup' ? (
+              <ShieldCheck size={28} className="text-cyan-400" />
+            ) : (
+              <Lock size={26} className="text-purple-400" />
+            )}
           </div>
 
-          <h2 className="font-inter" style={{ fontSize: '1.75rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '-0.01em', marginBottom: '0.35rem' }}>
-            {mode === 'setup' ? 'Admin Initial Setup' : 'Admin Portal'}
+          <h2 className="text-2xl sm:text-3xl font-extrabold uppercase tracking-tight text-white">
+            {mode === 'setup' ? 'Admin Setup / Reset' : 'Admin Portal Login'}
           </h2>
-          <p className="font-pixel" style={{ fontSize: '0.85rem', color: 'rgba(255, 255, 255, 0.6)', letterSpacing: '0.08em' }}>
+          <p className="text-xs uppercase tracking-widest text-white/50 mt-1 font-mono">
             {mode === 'setup' 
-              ? '// CREATE CREDENTIALS TO MANAGE PORTFOLIO' 
-              : '// AUTHENTICATE TO ACCESS SECURE DASHBOARD'}
+              ? '// Create or Reset Credentials to Manage Portfolio' 
+              : '// Authenticate to Access Secure Dashboard'}
           </p>
         </div>
 
-        {/* Mode Selector Tabs (If Setup is Already Done, allow switching) */}
-        {isSetup && (
-          <div style={{
-            display: 'flex',
-            background: 'rgba(0, 0, 0, 0.5)',
-            border: '1px solid rgba(255, 255, 255, 0.12)',
-            borderRadius: '8px',
-            padding: '4px',
-            marginBottom: '1.75rem'
-          }}>
-            <button
-              type="button"
-              onClick={() => { setMode('login'); setError(''); }}
-              style={{
-                flex: 1,
-                padding: '0.5rem',
-                borderRadius: '6px',
-                fontSize: '0.8rem',
-                fontFamily: 'var(--font-pixel)',
-                letterSpacing: '0.08em',
-                background: mode === 'login' ? 'rgba(0, 240, 255, 0.2)' : 'transparent',
-                color: mode === 'login' ? '#00f0ff' : 'rgba(255, 255, 255, 0.6)',
-                border: mode === 'login' ? '1px solid rgba(0, 240, 255, 0.4)' : 'none',
-                fontWeight: mode === 'login' ? 700 : 400
-              }}
-            >
-              LOGIN
-            </button>
-            <button
-              type="button"
-              onClick={() => { setMode('setup'); setError(''); }}
-              style={{
-                flex: 1,
-                padding: '0.5rem',
-                borderRadius: '6px',
-                fontSize: '0.8rem',
-                fontFamily: 'var(--font-pixel)',
-                letterSpacing: '0.08em',
-                background: mode === 'setup' ? 'rgba(168, 85, 247, 0.2)' : 'transparent',
-                color: mode === 'setup' ? '#c084fc' : 'rgba(255, 255, 255, 0.6)',
-                border: mode === 'setup' ? '1px solid rgba(168, 85, 247, 0.4)' : 'none',
-                fontWeight: mode === 'setup' ? 700 : 400
-              }}
-            >
-              NEW SETUP
-            </button>
-          </div>
-        )}
+        {/* Mode Selector Tabs */}
+        <div className="flex bg-black/60 border border-white/10 rounded-xl p-1 mb-6">
+          <button
+            type="button"
+            onClick={() => { setMode('login'); setError(''); setSuccess(''); }}
+            className={`flex-1 py-2 rounded-lg text-xs font-bold tracking-wider uppercase transition-all ${
+              mode === 'login' 
+                ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-400/40 shadow-sm' 
+                : 'text-white/60 hover:text-white'
+            }`}
+          >
+            Sign In
+          </button>
+          <button
+            type="button"
+            onClick={() => { setMode('setup'); setError(''); setSuccess(''); }}
+            className={`flex-1 py-2 rounded-lg text-xs font-bold tracking-wider uppercase transition-all ${
+              mode === 'setup' 
+                ? 'bg-purple-500/20 text-purple-300 border border-purple-400/40 shadow-sm' 
+                : 'text-white/60 hover:text-white'
+            }`}
+          >
+            {isSetup ? 'Reset Password' : 'New Setup'}
+          </button>
+        </div>
 
         {/* Error / Success Notifications */}
         {error && (
-          <motion.div
-            initial={{ opacity: 0, y: -8 }}
-            animate={{ opacity: 1, y: 0 }}
-            style={{
-              padding: '0.75rem 1rem',
-              borderRadius: '8px',
-              backgroundColor: 'rgba(239, 68, 68, 0.15)',
-              border: '1px solid #ef4444',
-              color: '#fca5a5',
-              fontSize: '0.85rem',
-              marginBottom: '1.25rem',
-              textAlign: 'center'
-            }}
-          >
+          <div className="p-3.5 rounded-xl bg-red-500/15 border border-red-500/50 text-red-300 text-xs text-center mb-5 font-medium leading-relaxed">
             {error}
-          </motion.div>
+          </div>
         )}
 
         {success && (
-          <motion.div
-            initial={{ opacity: 0, y: -8 }}
-            animate={{ opacity: 1, y: 0 }}
-            style={{
-              padding: '0.75rem 1rem',
-              borderRadius: '8px',
-              backgroundColor: 'rgba(16, 185, 129, 0.15)',
-              border: '1px solid #10b981',
-              color: '#6ee7b7',
-              fontSize: '0.85rem',
-              marginBottom: '1.25rem',
-              textAlign: 'center'
-            }}
-          >
-            {success}
-          </motion.div>
+          <div className="p-3.5 rounded-xl bg-emerald-500/15 border border-emerald-500/50 text-emerald-300 text-xs text-center mb-5 font-medium leading-relaxed flex items-center justify-center gap-2">
+            <Check size={16} /> {success}
+          </div>
         )}
 
-        {/* Form */}
-        <form onSubmit={handleSubmit}>
-          <div className="form-group">
-            <label className="form-label" style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-              <User size={14} color="#00f0ff" />
-              <span>USERNAME</span>
+        {/* Login Form */}
+        <form onSubmit={handleSubmit} className="space-y-5">
+          
+          {/* Username Input */}
+          <div className="form-group text-left">
+            <label className="form-label flex items-center gap-1.5 text-xs font-semibold text-white/90 uppercase tracking-wider mb-2">
+              <User size={14} className="text-cyan-400" />
+              <span>Username</span>
             </label>
             <input 
               type="text" 
-              className="form-input" 
-              placeholder="Enter admin username"
+              className="form-input text-white" 
+              placeholder="e.g. gowtham or admin"
               value={username} 
               onChange={e => setUsername(e.target.value)} 
               required 
+              autoFocus
+              style={{
+                color: '#ffffff',
+                backgroundColor: 'rgba(20, 20, 26, 0.95)',
+                border: '1px solid rgba(255, 255, 255, 0.25)',
+                fontSize: '1rem',
+                caretColor: '#00f0ff'
+              }}
             />
           </div>
 
-          <div className="form-group">
-            <label className="form-label" style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-              <Key size={14} color="#a855f7" />
-              <span>PASSWORD {mode === 'setup' && <span style={{ color: 'var(--text-muted)', fontSize: '0.75rem' }}>(MIN 6 CHARS)</span>}</span>
-            </label>
-            <input 
-              type="password" 
-              className="form-input" 
-              placeholder="Enter password"
-              value={password} 
-              onChange={e => setPassword(e.target.value)} 
-              required 
-              minLength={mode === 'setup' ? 6 : undefined}
-            />
+          {/* Password Input with Visibility Toggle */}
+          <div className="form-group text-left">
+            <div className="flex items-center justify-between mb-2">
+              <label className="form-label flex items-center gap-1.5 text-xs font-semibold text-white/90 uppercase tracking-wider mb-0">
+                <Key size={14} className="text-purple-400" />
+                <span>Password {mode === 'setup' && <span className="text-white/40 font-mono text-[10px]">(Min 6 chars)</span>}</span>
+              </label>
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="text-white/50 hover:text-cyan-300 transition-colors text-xs flex items-center gap-1"
+                aria-label="Toggle password visibility"
+              >
+                {showPassword ? <EyeOff size={14} /> : <Eye size={14} />}
+                <span>{showPassword ? "Hide" : "Show"}</span>
+              </button>
+            </div>
+            
+            <div className="relative">
+              <input 
+                type={showPassword ? "text" : "password"} 
+                className="form-input text-white pr-10" 
+                placeholder="Enter passcode"
+                value={password} 
+                onChange={e => setPassword(e.target.value)} 
+                required 
+                minLength={mode === 'setup' ? 6 : undefined}
+                style={{
+                  color: '#ffffff',
+                  backgroundColor: 'rgba(20, 20, 26, 0.95)',
+                  border: '1px solid rgba(255, 255, 255, 0.25)',
+                  fontSize: '1rem',
+                  caretColor: '#00f0ff'
+                }}
+              />
+            </div>
           </div>
 
+          {/* Submit Button */}
           <button 
             type="submit" 
-            className="btn-primary" 
-            style={{ 
-              width: '100%', 
-              marginTop: '1.5rem',
-              padding: '0.9rem',
-              fontSize: '0.95rem'
-            }}
+            disabled={submitting}
+            className="w-full mt-4 py-3.5 px-6 rounded-xl font-bold text-sm tracking-wider uppercase text-white bg-gradient-contact shadow-lg hover:scale-[1.02] active:scale-[0.98] transition-all disabled:opacity-50 cursor-pointer flex items-center justify-center gap-2"
           >
-            {mode === 'setup' ? 'COMPLETE SETUP & ENTER' : 'AUTHENTICATE & ENTER'}
+            {submitting ? (
+              <>
+                <RefreshCw size={16} className="animate-spin" />
+                <span>Processing...</span>
+              </>
+            ) : mode === 'setup' ? (
+              <span>Save Credentials & Enter</span>
+            ) : (
+              <span>Authenticate & Enter</span>
+            )}
           </button>
         </form>
 
-        <div style={{ textAlign: 'center', marginTop: '1.75rem' }}>
-          <span className="font-pixel" style={{ fontSize: '0.75rem', color: 'rgba(255,255,255,0.4)', letterSpacing: '0.1em' }}>
-            SECURED BY JWT & BCRYPT ENCRYPTION
-          </span>
+        {/* Footer Info */}
+        <div className="text-center mt-6 pt-5 border-t border-white/10 text-[11px] font-mono text-white/40 tracking-wider">
+          PROTECTED BY JWT TOKEN AUTH & BCRYPT
         </div>
       </motion.div>
     </div>

@@ -77,6 +77,7 @@ const AdminDashboard = () => {
       <div className="admin-content">
         <Routes>
           <Route path="/" element={<ProfileForm profile={data.profile} token={token} onUpdate={fetchData} />} />
+          <Route path="/dashboard" element={<ProfileForm profile={data.profile} token={token} onUpdate={fetchData} />} />
           <Route path="/profile" element={<ProfileForm profile={data.profile} token={token} onUpdate={fetchData} />} />
           <Route path="/experience" element={<ListManager table="experience" items={data.experience} token={token} onUpdate={fetchData} fields={['company', 'role', 'start_date', 'end_date', 'description']} />} />
           <Route path="/projects" element={<ListManager table="projects" items={data.projects} token={token} onUpdate={fetchData} fields={['title', 'description', 'tech_stack', 'github_url', 'demo_url']} />} />
