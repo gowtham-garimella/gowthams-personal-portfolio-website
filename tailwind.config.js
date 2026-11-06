@@ -6,8 +6,13 @@ export default {
   ],
   theme: {
     extend: {
+      colors: {
+        cream: "#efeee9",
+      },
       fontFamily: {
-        mono: ["'JetBrains Mono'", "monospace"],
+        hn: ['"Helvetica Neue ME"', 'Helvetica', 'Arial', 'sans-serif'],
+        sans: ['"Helvetica Neue ME"', 'Helvetica', 'Arial', 'sans-serif'],
+        serif: ['"Helvetica Neue ME"', 'Helvetica', 'Arial', 'sans-serif'],
       },
     },
   },
