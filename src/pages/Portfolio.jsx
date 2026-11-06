@@ -346,7 +346,7 @@ export default function Portfolio() {
       });
   }, []);
 
-  const { profile, experience, projects, skills, education } = data;
+  const { profile, experience, projects, skills, education, certifications = [], research_papers = [] } = data;
   const userAvatar = profile.avatar_url || "/images/gowtham.jpg";
 
   // Real skills & services defined from actual technical capabilities
@@ -852,36 +852,52 @@ export default function Portfolio() {
 
                   {/* Right Column: Visual Composition Card */}
                   <div className="lg:col-span-5">
-                    <div className="relative rounded-2xl overflow-hidden border border-white/10 bg-black/80 aspect-[4/3] flex flex-col justify-between p-6 shadow-inner">
-                      
-                      {/* Terminal Chrome Header */}
-                      <div className="flex items-center justify-between border-b border-white/10 pb-3">
-                        <div className="flex items-center gap-1.5">
-                          <span className="w-2.5 h-2.5 rounded-full bg-rose-500" />
-                          <span className="w-2.5 h-2.5 rounded-full bg-amber-500" />
-                          <span className="w-2.5 h-2.5 rounded-full bg-emerald-500" />
+                    {project.image_url ? (
+                      <div className="relative rounded-2xl overflow-hidden border border-white/10 aspect-[4/3] bg-black shadow-xl group">
+                        <img 
+                          src={project.image_url} 
+                          alt={project.title} 
+                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" 
+                        />
+                        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent pointer-events-none" />
+                        <div className="absolute bottom-4 left-4 right-4 flex items-center justify-between text-xs font-mono text-cyan-300">
+                          <span>{project.category || "AI / Software"}</span>
+                          <span className="flex items-center gap-1 text-emerald-400">
+                            <CheckCircle size={13} /> Active
+                          </span>
                         </div>
-                        <span className="text-[11px] font-mono text-white/40">project-spec.sh</span>
                       </div>
+                    ) : (
+                      <div className="relative rounded-2xl overflow-hidden border border-white/10 bg-black/80 aspect-[4/3] flex flex-col justify-between p-6 shadow-inner">
+                        {/* Terminal Chrome Header */}
+                        <div className="flex items-center justify-between border-b border-white/10 pb-3">
+                          <div className="flex items-center gap-1.5">
+                            <span className="w-2.5 h-2.5 rounded-full bg-rose-500" />
+                            <span className="w-2.5 h-2.5 rounded-full bg-amber-500" />
+                            <span className="w-2.5 h-2.5 rounded-full bg-emerald-500" />
+                          </div>
+                          <span className="text-[11px] font-mono text-white/40">project-spec.sh</span>
+                        </div>
 
-                      {/* Code / Visual Blueprint Simulation */}
-                      <div className="font-mono text-xs text-white/80 space-y-2 py-4">
-                        <p className="text-cyan-400">$ init --architecture=deep-learning</p>
-                        <p className="text-white/60">&gt; Status: 200 OK verified</p>
-                        <p className="text-white/60">&gt; Target: Real-time inferencing</p>
-                        <p className="text-purple-400">&gt; Pipeline: Verified end-to-end</p>
-                      </div>
+                        {/* Code / Visual Blueprint Simulation */}
+                        <div className="font-mono text-xs text-white/80 space-y-2 py-4">
+                          <p className="text-cyan-400">$ init --architecture=deep-learning</p>
+                          <p className="text-white/60">&gt; Status: 200 OK verified</p>
+                          <p className="text-white/60">&gt; Target: Real-time inferencing</p>
+                          <p className="text-purple-400">&gt; Pipeline: Verified end-to-end</p>
+                        </div>
 
-                      {/* Bottom Live Status Pill */}
-                      <div className="flex items-center justify-between pt-3 border-t border-white/10">
-                        <span className="flex items-center gap-2 text-xs font-semibold text-emerald-400">
-                          <CheckCircle size={14} /> Production Ready
-                        </span>
-                        <span className="text-xs font-mono text-white/50">
-                          v1.0.0
-                        </span>
+                        {/* Bottom Live Status Pill */}
+                        <div className="flex items-center justify-between pt-3 border-t border-white/10">
+                          <span className="flex items-center gap-2 text-xs font-semibold text-emerald-400">
+                            <CheckCircle size={14} /> Production Ready
+                          </span>
+                          <span className="text-xs font-mono text-white/50">
+                            v1.0.0
+                          </span>
+                        </div>
                       </div>
-                    </div>
+                    )}
                   </div>
 
                 </div>
@@ -957,6 +973,71 @@ export default function Portfolio() {
                   </div>
                 ))}
               </div>
+
+              {/* Certifications (if present) */}
+              {certifications && certifications.length > 0 && (
+                <div className="mt-12 pt-8 border-t border-white/10">
+                  <span className="text-xs uppercase tracking-[0.3em] text-emerald-400 font-semibold block mb-3">
+                    // Credentials & Honors
+                  </span>
+                  <h3 className="text-2xl font-bold uppercase text-white tracking-tight mb-6">
+                    Certifications
+                  </h3>
+                  <div className="space-y-4">
+                    {certifications.map((cert) => (
+                      <a 
+                        key={cert.id}
+                        href={cert.url || "#"}
+                        target={cert.url ? "_blank" : "_self"}
+                        rel="noreferrer"
+                        className="p-5 rounded-xl border border-white/10 bg-white/[0.02] hover:bg-white/[0.05] transition-all flex items-center justify-between group block"
+                      >
+                        <div>
+                          <div className="text-sm font-bold text-white uppercase group-hover:text-cyan-400 transition-colors">
+                            {cert.title}
+                          </div>
+                          <span className="text-xs font-semibold text-purple-400 uppercase mt-0.5 block">
+                            {cert.issuer} {cert.date && `• ${cert.date}`}
+                          </span>
+                        </div>
+                        {cert.url && <ArrowUpRight size={16} className="text-white/40 group-hover:text-cyan-400 transition-colors" />}
+                      </a>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Research Papers (if present) */}
+              {research_papers && research_papers.length > 0 && (
+                <div className="mt-12 pt-8 border-t border-white/10">
+                  <span className="text-xs uppercase tracking-[0.3em] text-cyan-400 font-semibold block mb-3">
+                    // Published Work
+                  </span>
+                  <h3 className="text-2xl font-bold uppercase text-white tracking-tight mb-6">
+                    Research Papers
+                  </h3>
+                  <div className="space-y-4">
+                    {research_papers.map((paper) => (
+                      <div key={paper.id} className="p-5 rounded-xl border border-white/10 bg-white/[0.02] flex items-center justify-between gap-4">
+                        <div>
+                          <div className="text-sm font-bold text-white uppercase">{paper.title}</div>
+                          {paper.description && <p className="text-xs text-white/60 mt-1">{paper.description}</p>}
+                        </div>
+                        {paper.pdf_url && (
+                          <a 
+                            href={paper.pdf_url} 
+                            target="_blank" 
+                            rel="noreferrer" 
+                            className="px-4 py-2 rounded-lg bg-white/10 hover:bg-white/20 text-xs font-semibold text-cyan-300 flex items-center gap-1.5 shrink-0"
+                          >
+                            <Download size={13} /> PDF
+                          </a>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
 
           </div>
